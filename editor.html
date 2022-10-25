@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CloudConfig 에디터</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="text/babel">
+    const iv = 'baked-potato';
+
+    const {useState, useCallback} = React;
+
+    function encrypt(text, password) {
+        return CryptoJS.AES.encrypt(text, CryptoJS.enc.Utf8.parse(password.padStart(32, " ")), {
+            iv: CryptoJS.enc.Utf8.parse(iv.padStart(16, " ")),
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7,
+        }).toString();
+    }
+
+    function decrypt(text, password) {
+        return CryptoJS.AES.decrypt(text, CryptoJS.enc.Utf8.parse(password.padStart(32, " ")), {
+            iv: CryptoJS.enc.Utf8.parse(iv.padStart(16, " ")),
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7,
+        }).toString(CryptoJS.enc.Utf8);
+    }
+
+    function TextField({value, onChange}) {
+        return <div>
+            <input type="text" value={value} onChange={(event) => onChange(event.target.value)} />
+        </div>
+    }
+
+    function TextArea({value, onChange}) {
+        return <div>
+            <label>
+                <textarea style={{height: '40vh', width: '60vw'}} value={value}
+                          onChange={(event) => onChange(event.target.value)}/>
+            </label>
+        </div>
+    }
+
+    function App() {
+        const [password, setPassword] = useState('');
+        const [plain, setPlain] = useState('');
+        const [encrypted, setEncrypted] = useState('');
+
+        const passwordIsChanged = useCallback((newValue) => {
+            setPassword(newValue);
+            setEncrypted('');
+            setPlain('');
+        });
+
+        const plainIsChanged = useCallback((newValue) => {
+            setPlain(newValue);
+            setEncrypted(encrypt(newValue, password));
+        });
+
+        const encryptedIsChanged = useCallback((newValue) => {
+            setEncrypted(newValue);
+            setPlain(decrypt(newValue, password));
+        });
+
+        return <>
+            Password
+            <TextField value={password} onChange={passwordIsChanged} />
+
+            Plain
+            <TextArea value={plain} onChange={plainIsChanged}/>
+
+            Encrypted
+            <TextArea value={encrypted} onChange={encryptedIsChanged}/>
+        </>;
+    }
+
+    const container = document.getElementById("app");
+    const root = ReactDOM.createRoot(container);
+    root.render(<App/>);
+</script>
+</body>
+</html>
